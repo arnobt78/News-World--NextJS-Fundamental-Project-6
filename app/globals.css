@@ -63,6 +63,7 @@
 
 :root {
   --background: oklch(1 0 0);
+  --bg-gradient: linear-gradient(to bottom, #f3f4f6 0%, #f9fafb 50%, #f3f4f6 100%);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -98,6 +99,7 @@
 
 .dark {
   --background: oklch(0.145 0 0);
+  --bg-gradient: linear-gradient(to bottom, #020617 0%, #334155 50%, #020617 100%);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -144,37 +146,71 @@
   html {
     font-size: 100%;
     font-family: var(--font-outfit);
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    min-height: 100%;
   }
 
   body {
-    background-color: transparent;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    min-height: 100%;
     color: var(--color-foreground);
     font-family: var(--font-outfit);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom scrollbar - dark theme */
   .scrollbar-custom {
     scrollbar-width: thin;
-    scrollbar-color: #444 #1a1b1e;
   }
-
   .scrollbar-custom::-webkit-scrollbar {
     width: 8px;
   }
-
   .scrollbar-custom::-webkit-scrollbar-track {
-    background: #1a1b1e;
     border-radius: 4px;
   }
-
   .scrollbar-custom::-webkit-scrollbar-thumb {
-    background: #444;
     border-radius: 4px;
   }
 
-  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-    background: #555;
+  /* Hide scrollbar but keep scroll behavior (reel / banner strip) */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Theme-aware scrollbar */
+.dark .scrollbar-custom {
+  scrollbar-color: #444 #1a1b1e;
+}
+.dark .scrollbar-custom::-webkit-scrollbar-track {
+  background: #1a1b1e;
+}
+.dark .scrollbar-custom::-webkit-scrollbar-thumb {
+  background: #444;
+}
+.dark .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+:root:not(.dark) .scrollbar-custom {
+  scrollbar-color: oklch(0.7 0 0) oklch(0.95 0 0);
+}
+:root:not(.dark) .scrollbar-custom::-webkit-scrollbar-track {
+  background: oklch(0.95 0 0);
+}
+:root:not(.dark) .scrollbar-custom::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0 0);
+}
+:root:not(.dark) .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0 0);
+}
+
+/* Native date input calendar icon: light in dark mode, dark in light mode */
+.dark input[type="date"] {
+  color-scheme: dark;
 }

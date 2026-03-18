@@ -20,6 +20,7 @@ export interface Article {
   url: string;
   image: string | null;
   publishedAt: string;
+  lang?: string;
   source: ArticleSource;
 }
 
@@ -37,6 +38,8 @@ export interface HeadlinesParams {
   max?: number;
   page?: number;
   q?: string;
+  nullable?: string;
+  truncate?: "content";
 }
 
 /** Params for search endpoint */
@@ -49,4 +52,7 @@ export interface SearchParams {
   from?: string;
   to?: string;
   sortby?: "publishedAt" | "relevance";
+  in?: string;
+  nullable?: string;
+  truncate?: "content";
 }

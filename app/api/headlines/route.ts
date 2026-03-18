@@ -13,14 +13,17 @@ export async function GET(request: NextRequest) {
   const country = searchParams.get("country") ?? undefined;
   const maxParam = searchParams.get("max");
   const pageParam = searchParams.get("page");
+  const nullable = searchParams.get("nullable") ?? undefined;
+  const truncate = searchParams.get("truncate") === "content" ? "content" as const : undefined;
 
   try {
-    /* Forward params to GNews; lib/gnews.ts adds API key server-side */
     const data = await fetchHeadlines(category, {
       lang: lang || undefined,
       country: country || undefined,
       max: maxParam ? parseInt(maxParam, 10) : undefined,
       page: pageParam ? parseInt(pageParam, 10) : undefined,
+      nullable,
+      truncate,
     });
     return NextResponse.json(data);
   } catch (error) {

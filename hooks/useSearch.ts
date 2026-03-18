@@ -3,7 +3,8 @@
 /**
  * useSearch - Fetches search results via React Query.
  * Only runs when query is non-empty (enabled: !!query.trim()).
- * Page state is local; changing it triggers a new fetch.
+ * Page state is local. To reset page when query/filters change, remount the
+ * component that calls useSearch (e.g. give it a key from query + filter values).
  */
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,28 +16,46 @@ interface UseSearchParams {
   country?: string;
   max?: number;
   sortby?: "publishedAt" | "relevance";
+  in?: string;
+  from?: string;
+  to?: string;
+  nullable?: string;
+  truncate?: "content";
 }
 
 export function useSearch(query: string, params?: UseSearchParams) {
   const [page, setPageState] = useState(1);
 
+  const queryTrimmed = query.trim();
+  const paramIn = params?.in;
+  const paramFrom = params?.from;
+  const paramTo = params?.to;
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.search.list(
-      query.trim(),
+      queryTrimmed,
       page,
       params?.country,
-      params?.lang
+      params?.lang,
+      paramIn,
+      paramFrom,
+      paramTo
     ),
     queryFn: () =>
       fetchSearchClient({
-        q: query.trim(),
+        q: queryTrimmed,
         page,
         lang: params?.lang,
         country: params?.country,
         max: params?.max,
         sortby: params?.sortby,
+        in: paramIn,
+        from: paramFrom,
+        to: paramTo,
+        nullable: params?.nullable,
+        truncate: params?.truncate,
       }),
-    enabled: !!query.trim(), /* No fetch when search is empty */
+    enabled: !!queryTrimmed, /* No fetch when search is empty */
   });
 
   const setPage = useCallback((p: number) => {

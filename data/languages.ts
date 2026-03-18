@@ -1,5 +1,5 @@
 /**
- * GNews API supported language codes. Used in PageHeader filters.
+ * GNews API supported language codes. Used in Navbar filters.
  */
 export const languages = [
   { code: "en", name: "English" },

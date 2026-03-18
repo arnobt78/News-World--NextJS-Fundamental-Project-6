@@ -91,13 +91,18 @@ export default function RootLayout({
       className={cn(playfair.variable, outfit.variable, geist.variable)}
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('news-world-theme');var d=!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches);document.documentElement.classList.toggle('dark',t?t==='dark':d);})();`,
+          }}
+        />
         <meta name="author" content="Arnob Mahmud (contact@arnobmahmud.com)" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         />
       </head>
-      <body className="font-outfit antialiased scrollbar-custom bg-[#060709] min-h-screen" suppressHydrationWarning>
+      <body className="font-outfit antialiased scrollbar-custom min-h-screen text-foreground" suppressHydrationWarning>
         {/* Provider chain: QueryProvider (React Query) → InvalidationProvider → BookmarkProvider → NewsProvider */}
         <QueryProvider>
           <InvalidationProvider>

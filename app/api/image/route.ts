@@ -1,6 +1,6 @@
 /**
- * Image proxy - Fetches external images server-side and streams to client.
- * Avoids ERR_BLOCKED_BY_CLIENT (ad blockers) by serving images from our domain.
+ * First-party image proxy - Fetches external images server-side and streams to client.
+ * Served from same origin so ad blockers do not block; upstream 4xx/5xx redirect to placeholder.
  * SSRF-safe: only allows http/https to external hosts.
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -13,6 +13,10 @@ const BLOCKED_HOSTS = [
   "[::1]",
   "169.254.169.254", /* AWS metadata */
 ];
+
+/** Browser-like UA to reduce 401 from strict image hosts (e.g. guim.co.uk). */
+const IMAGE_PROXY_UA =
+  "Mozilla/5.0 (compatible; NewsWorld/1.0; +https://github.com)";
 
 function isValidImageUrl(urlString: string): boolean {
   try {
@@ -28,31 +32,44 @@ function isValidImageUrl(urlString: string): boolean {
   }
 }
 
+/** Redirect to app placeholder so img never sees 401/400/502; no console errors. */
+function redirectToPlaceholder(request: NextRequest) {
+  return NextResponse.redirect(new URL("/images/no-img.png", request.url), 302);
+}
+
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.searchParams.get("url");
   if (!url || !url.trim()) {
-    return NextResponse.json({ error: "Missing url parameter" }, { status: 400 });
+    return redirectToPlaceholder(request);
   }
 
-  const decodedUrl = decodeURIComponent(url.trim());
+  let decodedUrl: string;
+  try {
+    decodedUrl = decodeURIComponent(url.trim());
+  } catch {
+    return redirectToPlaceholder(request);
+  }
   if (!isValidImageUrl(decodedUrl)) {
-    return NextResponse.json({ error: "Invalid url" }, { status: 400 });
+    return redirectToPlaceholder(request);
   }
 
   try {
     const res = await fetch(decodedUrl, {
       headers: {
-        "User-Agent": "NewsWorld/1.0 (Image Proxy)",
+        "User-Agent": IMAGE_PROXY_UA,
+        Accept: "image/*,*/*",
       },
-      next: { revalidate: 3600 }, /* Cache 1 hour */
+      next: { revalidate: 3600 },
     });
 
     if (!res.ok) {
-      return new NextResponse(null, { status: res.status });
+      return redirectToPlaceholder(request);
     }
 
     const contentType = res.headers.get("content-type") ?? "image/jpeg";
-    const cacheControl = res.headers.get("cache-control") ?? "public, max-age=3600, s-maxage=3600";
+    const cacheControl =
+      res.headers.get("cache-control") ??
+      "public, max-age=3600, s-maxage=3600";
 
     return new NextResponse(res.body, {
       status: 200,
@@ -62,6 +79,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch {
-    return new NextResponse(null, { status: 502 });
+    return redirectToPlaceholder(request);
   }
 }

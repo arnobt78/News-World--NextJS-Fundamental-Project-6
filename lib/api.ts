@@ -6,7 +6,7 @@ import type { Article, GNewsResponse } from "@/types/news";
 
 const NO_IMG = "/images/no-img.png";
 
-/** Ensures every article has an image URL (fallback to placeholder) */
+/** Ensures every article has an image URL (fallback to placeholder); passes through id, lang, source.url, source.country */
 function normalizeArticles(articles: Article[]): Article[] {
   return articles.map((a) => ({
     ...a,
@@ -48,6 +48,11 @@ export interface FetchSearchParams {
   country?: string;
   max?: number;
   sortby?: "publishedAt" | "relevance";
+  in?: string;
+  from?: string;
+  to?: string;
+  nullable?: string;
+  truncate?: "content";
 }
 
 export async function fetchSearchClient(
@@ -59,6 +64,11 @@ export async function fetchSearchClient(
   if (params.country) searchParams.set("country", params.country);
   if (params.max) searchParams.set("max", String(params.max));
   if (params.sortby) searchParams.set("sortby", params.sortby);
+  if (params.in) searchParams.set("in", params.in);
+  if (params.from) searchParams.set("from", params.from);
+  if (params.to) searchParams.set("to", params.to);
+  if (params.nullable) searchParams.set("nullable", params.nullable);
+  if (params.truncate) searchParams.set("truncate", params.truncate);
   const res = await fetch(`/api/search?${searchParams.toString()}`);
   if (!res.ok) throw new Error("Failed to search");
   const data: GNewsResponse = await res.json();

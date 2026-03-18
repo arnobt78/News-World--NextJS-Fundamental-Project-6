@@ -1,5 +1,5 @@
 /**
- * GNews API supported country codes. Used in PageHeader filters.
+ * GNews API supported country codes. Used in Navbar filters.
  * Code format: ISO 3166-1 alpha-2 (e.g. us, gb, in).
  */
 export const countries = [

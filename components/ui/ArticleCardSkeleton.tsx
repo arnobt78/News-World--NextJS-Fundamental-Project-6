@@ -2,7 +2,8 @@
 
 /**
  * ArticleCardSkeleton - Loading placeholder matching ArticleCard layout.
- * isHeadline: larger card; else standard with title lines + badge.
+ * isHeadline: larger card (kept for potential reuse; featured headline not used in NewsGrid).
+ * Else: standard card with title lines + badge.
  */
 import { Skeleton } from "./skeleton";
 

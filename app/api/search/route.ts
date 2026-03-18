@@ -15,8 +15,10 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from") ?? undefined;
   const to = searchParams.get("to") ?? undefined;
   const sortby = searchParams.get("sortby") as "publishedAt" | "relevance" | undefined;
+  const inParam = searchParams.get("in") ?? undefined;
+  const nullable = searchParams.get("nullable") ?? undefined;
+  const truncate = searchParams.get("truncate") === "content" ? ("content" as const) : undefined;
 
-  /* Search requires a non-empty query */
   if (!q.trim()) {
     return NextResponse.json(
       { error: "Query parameter 'q' is required" },
@@ -34,6 +36,9 @@ export async function GET(request: NextRequest) {
       from: from || undefined,
       to: to || undefined,
       sortby: sortby || undefined,
+      in: inParam || undefined,
+      nullable: nullable || undefined,
+      truncate: truncate,
     });
     return NextResponse.json(data);
   } catch (error) {

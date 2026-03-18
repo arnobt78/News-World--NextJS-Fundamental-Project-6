@@ -1,20 +1,40 @@
 "use client";
 
 /**
- * NewsModal - Full article view overlay. Share (Web Share API or clipboard),
- * Bookmark, Read More link. AnimatePresence for enter/exit animations.
- * Click backdrop to close; stopPropagation on content.
+ * NewsModal - Full article view in shadcn Dialog. Share, Bookmark, Read More.
+ * Theme-aware styles so badges and text are readable in light and dark mode.
+ * GNews API returns truncated content with "[N chars]" suffix; we strip it for display.
  */
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Share2, Bookmark, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useBookmarks } from "@/context/BookmarkContext";
 import { getProxiedImageUrl } from "@/lib/imageProxy";
 import type { Article } from "@/types/news";
 import Image from "next/image";
 
 const NO_IMG = "/images/no-img.png";
+
+/** GNews often returns content ending with " ... [1234 chars]"; strip for cleaner display. */
+function stripCharsSuffix(text: string): string {
+  return text.replace(/\s*\[[\d,]+(\s*chars?)?\]\s*$/i, "").trim();
+}
+
+/** Single body block: prefer content (API snippet), else description. Avoids duplicate paragraphs. */
+function getArticleBody(article: Article): string | null {
+  const content = article.content ? stripCharsSuffix(article.content) : "";
+  const desc = article.description?.trim() ?? "";
+  if (content && content.length >= desc.length) return content;
+  if (desc) return desc;
+  return content || null;
+}
 
 interface NewsModalProps {
   show: boolean;
@@ -42,105 +62,121 @@ export default function NewsModal({ show, article, onClose }: NewsModalProps) {
   const { toggleBookmark, isBookmarked } = useBookmarks();
 
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[1000] p-4"
-          role="dialog"
-          aria-modal="true"
+    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="bg-card border-border p-0 overflow-hidden flex flex-col rounded-xl ring-0"
+        style={{ width: "90vw", maxWidth: "90vw", height: "90vh" }}
+      >
+        <button
+          type="button"
           onClick={onClose}
+          className="absolute top-4 right-4 z-20 p-2 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Close modal"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="w-full max-w-7xl max-h-[90vh] bg-[#111214] rounded-xl shadow-2xl relative overflow-y-auto scrollbar-custom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              className="absolute top-4 right-4 z-20 p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="size-6 cursor-pointer" />
-            </button>
-            {article && (
-              <Card className="border-0 bg-transparent shadow-none">
-                <Image
-                  src={getProxiedImageUrl(article.image)}
-                  alt={article.title}
-                  width={1000}
-                  height={1000}
-                  unoptimized
-                  onError={(e) => {
-                    e.currentTarget.src = NO_IMG;
-                  }}
-                  className="w-full h-auto max-h-[30rem] object-cover rounded-t-xl opacity-80"
-                />
-                <div className="px-6 py-6">
-                  <h2 className="font-playfair text-2xl sm:text-3xl text-white tracking-wider">
+          <X className="size-6 cursor-pointer" />
+        </button>
+        <div className="overflow-y-auto scrollbar-custom flex-1 border-0">
+          {article && (
+            <Card className="border-0 bg-transparent shadow-none rounded-b-xl overflow-hidden">
+              <Image
+                src={getProxiedImageUrl(article.image)}
+                alt={article.title}
+                width={1000}
+                height={1000}
+                unoptimized
+                onError={(e) => {
+                  e.currentTarget.src = NO_IMG;
+                }}
+                className="w-full h-auto max-h-[30rem] object-cover rounded-t-xl opacity-80"
+              />
+              <div className="px-6 py-6">
+                <DialogHeader>
+                  <DialogTitle className="font-playfair text-2xl sm:text-3xl text-foreground tracking-wider text-left">
                     {article.title}
-                  </h2>
-                  <div className="flex flex-wrap gap-2 mt-3 items-center font-outfit text-sm text-[#bbb]">
-                    <span className="font-medium">{article.source.name}</span>
-                    <span>
-                      {new Date(article.publishedAt).toLocaleString("en-US", {
-                        month: "short",
-                        day: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <p className="mt-4 text-base text-[#ddd] leading-relaxed font-outfit">
-                    {article.content || article.description || ""}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-6 items-center">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="bg-[#222] text-[#bbb] hover:bg-[#333] hover:text-white"
-                      onClick={() => handleShare(article)}
-                    >
-                      <Share2 className="size-4 mr-1" />
-                      Share
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className={`bg-[#222] text-[#bbb] hover:bg-[#333] hover:text-white ${isBookmarked(article.url) ? "text-[#b88efc]" : ""}`}
-                      onClick={() => toggleBookmark(article.url, article)}
-                    >
-                      <Bookmark
-                        className={`size-4 mr-1 ${isBookmarked(article.url) ? "fill-current" : ""}`}
-                      />
-                      {isBookmarked(article.url) ? "Saved" : "Bookmark"}
-                    </Button>
-                  </div>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-wrap gap-2 mt-3 items-center font-outfit text-sm">
+                  <Badge variant="secondary" className="bg-muted text-foreground border-border">
+                    {article.source.name}
+                  </Badge>
+                  <Badge variant="outline" className="border-border text-muted-foreground">
+                    {new Date(article.publishedAt).toLocaleString("en-US", {
+                      month: "short",
+                      day: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Badge>
+                  {article.lang && (
+                    <Badge variant="outline" className="border-border text-muted-foreground">
+                      {article.lang}
+                    </Badge>
+                  )}
+                  {article.source.country && (
+                    <Badge variant="outline" className="border-border text-muted-foreground">
+                      {article.source.country}
+                    </Badge>
+                  )}
+                </div>
+                {article.source.url && (
                   <a
-                    href={article.url}
+                    href={article.source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-6 py-4 px-8 bg-gradient-to-r from-[#b88efc] to-[#6877f4] text-white text-center text-base uppercase rounded-[5rem] font-outfit hover:opacity-90 active:translate-y-0.5 transition-all"
+                    className="inline-block mt-2 font-outfit text-sm text-primary hover:text-primary/80 transition-colors underline"
                   >
-                    Read More
+                    Source: {article.source.name}
                   </a>
+                )}
+                {(() => {
+                  const body = getArticleBody(article);
+                  return body ? (
+                    <p className="mt-4 text-base text-foreground/90 leading-relaxed font-outfit whitespace-pre-wrap">
+                      {body}
+                    </p>
+                  ) : (
+                  <p className="mt-4 text-base text-muted-foreground font-outfit italic">
+                      No description or content available. Open the source for the full article.
+                    </p>
+                  );
+                })()}
+                <div className="flex flex-wrap gap-2 mt-6 items-center">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="bg-muted text-foreground hover:bg-muted/80"
+                    onClick={() => handleShare(article)}
+                  >
+                    <Share2 className="size-4 mr-1" />
+                    Share
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={`bg-muted text-foreground hover:bg-muted/80 ${isBookmarked(article.url) ? "text-primary" : ""}`}
+                    onClick={() => toggleBookmark(article.url, article)}
+                  >
+                    <Bookmark
+                      className={`size-4 mr-1 ${isBookmarked(article.url) ? "fill-current" : ""}`}
+                    />
+                    {isBookmarked(article.url) ? "Saved" : "Bookmark"}
+                  </Button>
                 </div>
-              </Card>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-6 py-4 px-8 bg-primary text-primary-foreground text-center text-base uppercase rounded-[5rem] font-outfit hover:opacity-90 active:translate-y-0.5 transition-all"
+                >
+                  Read More
+                </a>
+              </div>
+            </Card>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

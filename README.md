@@ -30,9 +30,10 @@ A modern, full-featured news application that delivers live world headlines from
 13. [Libraries & Dependencies](#libraries--dependencies)
 14. [Reusing Components](#reusing-components)
 15. [Keywords](#keywords)
-16. [Conclusion](#conclusion)
-17. [License](#license)
-18. [Happy Coding!](#happy-coding-)
+16. [Implementation highlights](#implementation-highlights-whats-included)
+17. [Conclusion](#conclusion)
+18. [License](#license)
+19. [Happy Coding!](#happy-coding-)
 
 ---
 
@@ -47,16 +48,19 @@ News World is an educational news application that fetches real-time headlines f
 | Feature                        | Description                                                                                                   |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | **Category Headlines**         | Browse news by category: General, World, Business, Technology, Entertainment, Sports, Science, Health, Nation |
-| **Keyword Search**             | Search across 80,000+ news sources with filters for country and language                                      |
-| **Bookmarks**                  | Save articles to read later; persisted in `localStorage`                                                      |
-| **Country & Language Filters** | Filter headlines and search results by 20+ countries and 15+ languages                                        |
-| **Article Modal**              | Click any article card to view full details in a modal overlay                                                |
-| **Refresh**                    | Manually refresh headlines with a loading indicator                                                           |
-| **Theme Toggle**               | Switch between light and dark themes                                                                          |
-| **Responsive Design**          | Mobile-first layout with Tailwind CSS                                                                         |
-| **Skeleton Loading**           | Animated skeletons while data loads                                                                           |
-| **SEO Metadata**               | Title, description, Open Graph, and Twitter cards for sharing                                                 |
-| **Image Proxy**                | External images served via `/api/image` to avoid ad blocker blocking (ERR_BLOCKED_BY_CLIENT)                 |
+| **Hero & Headlines Reel**      | Hero banner (responsive height) and infinite auto-scrolling film reel of articles on the home page          |
+| **Keyword Search**            | Search across 80,000+ sources with "Search in", date range (From/To), and pagination; centered layout        |
+| **Bookmarks**                  | Save articles; counter badge in navbar; full article data stored; same badges as Home; centered empty state   |
+| **Country & Language Filters** | Filter headlines and search by 20+ countries and 15+ languages (NewsContext, shared across Home & Search)    |
+| **Article Modal**              | Shadcn Dialog (90vw×90vh), theme-aware; source/date/lang/country badges; single body; Share, Bookmark, Read More |
+| **Refresh**                    | Manually refresh headlines with a loading indicator                                                            |
+| **Theme Toggle**               | Light/dark mode; consistent theme-aware UI; scrollbars and inputs adapt                                       |
+| **Responsive Design**          | Mobile-first; Search/Bookmarks/About centered (max-w-7xl); Navbar border inset (mx-4)                        |
+| **Skeleton Loading**          | Animated skeletons; hero/reel use mounted guard to avoid hydration mismatch                                   |
+| **SEO Metadata**               | Title, description, author, Open Graph, Twitter cards                                                         |
+| **Image Proxy**                | First-party `/api/image`; 4xx/5xx → placeholder; avoids ad blocker blocking                                   |
+| **Category Icons**             | Lucide icons next to each category in the sidebar                                                             |
+| **Unified Data Flow**          | Same Article shape and NewsModal on Home, Search, Bookmarks; single hooks/context pattern                    |
 
 ---
 
@@ -94,23 +98,25 @@ news-world/
 ├── components/
 │   ├── pages/
 │   │   ├── HomePage.tsx         # Home page content
-│   │   ├── SearchPage.tsx       # Search page content
-│   │   ├── BookmarksPage.tsx    # Bookmarks page content
-│   │   └── AboutPage.tsx        # About page content
+│   │   ├── SearchPage.tsx       # Search page (centered form, empty state with icons)
+│   │   ├── BookmarksPage.tsx    # Bookmarks page (centered, empty state with icons)
+│   │   └── AboutPage.tsx        # About page (Framer Motion staggered cards)
 │   ├── ui/
-│   │   ├── ArticleCard.tsx      # Article card with bookmark button
+│   │   ├── ArticleCard.tsx      # Article card with badges, bookmark button
 │   │   ├── ArticleCardSkeleton.tsx
-│   │   ├── PageHeader.tsx        # Navbar with filters and links
-│   │   ├── Footer.tsx           # Reusable footer
-│   │   ├── SearchBar.tsx        # Search input
+│   │   ├── Navbar.tsx           # Top navbar; border-b + mx-4 for inset line
+│   │   ├── Footer.tsx            # Reusable footer
+│   │   ├── SearchBar.tsx        # Theme-aware search input (Lucide Search)
 │   │   ├── SearchResultsSkeleton.tsx
 │   │   ├── NewsGridSkeleton.tsx
-│   │   └── ...                  # Button, Badge, Skeleton, etc.
-│   ├── NewsSection.tsx          # Main home layout (header, sidebar, grid)
-│   ├── NewsNavbar.tsx          # Category sidebar
-│   ├── NewsGrid.tsx            # Article grid layout
-│   ├── NewsModal.tsx           # Article detail modal
-│   ├── ThemeToggle.tsx         # Light/dark theme
+│   │   └── ...                  # Button, Badge, Skeleton, Dialog, etc.
+│   ├── NewsSection.tsx          # Home: header, sidebar, hero, reel, grid, footer
+│   ├── NewsSidebar.tsx          # Category sidebar with Lucide icons
+│   ├── HeroBanner.tsx           # Hero carousel (mounted guard for hydration)
+│   ├── BannerSlider.tsx         # Infinite film reel (mounted guard)
+│   ├── NewsGrid.tsx             # Article grid layout
+│   ├── NewsModal.tsx            # Shadcn Dialog article detail (90vw×90vh)
+│   ├── ThemeToggle.tsx          # Light/dark theme
 │   └── providers/
 │       ├── QueryProvider.tsx   # React Query client
 │       └── InvalidationProvider.tsx
@@ -132,8 +138,9 @@ news-world/
 │   └── utils.ts                # cn(), etc.
 ├── data/
 │   ├── categories.ts            # GNews category list
-│   ├── countries.ts            # Country codes for filters
-│   └── languages.ts            # Language codes for filters
+│   ├── categoryIcons.tsx        # Lucide icon map per category
+│   ├── countries.ts             # Country codes for filters
+│   └── languages.ts             # Language codes for filters
 ├── types/
 │   └── news.ts                 # Article, GNewsResponse, params
 ├── public/
@@ -205,7 +212,7 @@ To enable live news:
 
 5. Restart the dev server (`npm run dev`)
 
-**Note:** The free tier allows ~100 requests per day. For production (e.g. Vercel), add `GNEWS_API_KEY` in your project's Environment Variables.
+**Note:** The free tier allows ~100 requests per day. For production (e.g. Vercel), add `GNEWS_API_KEY` in your project's Environment Variables. If you see **403** from the API, check that the key is valid and not expired; 403 can also indicate rate limit or plan restrictions.
 
 ### `.env.example`
 
@@ -241,7 +248,7 @@ Copy to `.env.local` and replace with your key.
 | `/bookmarks` | Bookmarks | Saved articles from localStorage          |
 | `/about`     | About     | Project info, tech stack, features        |
 
-All pages share the same header (navbar), footer, and layout structure. The home page uses a sidebar for categories; Search, Bookmarks, and About use a single-column layout.
+All pages share the same header (Navbar), footer, and layout structure. The home page uses a sidebar for categories plus hero and reel; Search, Bookmarks, and About use a centered single-column layout (max-w-7xl) with consistent padding and empty states.
 
 ---
 
@@ -262,6 +269,8 @@ Fetches top headlines from GNews.
 | `lang`     | string | `en`      | Language code (e.g. `en`, `es`, `fr`)                                                        |
 | `max`      | number | 10        | Max articles to return                                                                       |
 | `page`     | number | 1         | Page number                                                                                  |
+| `nullable` | string | -         | Optional GNews param                                                                         |
+| `truncate` | string | -         | `content` to truncate article content                                                        |
 
 **Example:**
 
@@ -275,24 +284,29 @@ Searches news articles by keyword.
 
 **Query parameters:**
 
-| Param     | Type   | Required | Description                  |
-| --------- | ------ | -------- | ---------------------------- |
-| `q`       | string | Yes      | Search query                 |
-| `country` | string | No       | Country filter               |
-| `lang`    | string | No       | Language filter              |
-| `max`     | number | No       | Max results                  |
-| `page`    | number | No       | Page number                  |
-| `sortby`  | string | No       | `publishedAt` or `relevance` |
+| Param     | Type   | Required | Description                       |
+| --------- | ------ | -------- | --------------------------------- |
+| `q`       | string | Yes      | Search query                      |
+| `country` | string | No       | Country filter                    |
+| `lang`    | string | No       | Language filter                   |
+| `max`     | number | No       | Max results                       |
+| `page`    | number | No       | Page number                       |
+| `sortby`  | string | No       | `publishedAt` or `relevance`      |
+| `in`      | string | No       | Search in: title, description, content, or comma-separated |
+| `from`    | string | No       | Start date (ISO)                  |
+| `to`      | string | No       | End date (ISO)                    |
+| `nullable`| string | No       | Optional GNews param             |
+| `truncate`| string | No       | `content` to truncate             |
 
 **Example:**
 
 ```bash
-GET /api/search?q=technology&lang=en&page=1
+GET /api/search?q=technology&lang=en&page=1&in=title,description
 ```
 
 ### GET `/api/image`
 
-Proxies external images through our domain. Avoids `ERR_BLOCKED_BY_CLIENT` when ad blockers block third-party media (e.g. CNN, BBC CDNs). Uses `getProxiedImageUrl()` in ArticleCard and NewsModal. Fallback to placeholder on error.
+First-party image proxy. Fetches external images server-side and streams to the client so ad blockers (which block third-party media) do not affect thumbnails. On upstream 4xx/5xx or invalid URL, redirects to `/images/no-img.png` so the UI shows a placeholder without console errors. SSRF-safe (only http/https, no localhost or private IPs). Configured in `next.config.ts` with Cache-Control headers.
 
 **Query parameters:**
 
@@ -313,30 +327,32 @@ GET /api/image?url=https://media.cnn.com/.../image.jpg
 ### Page Components (`components/pages/`)
 
 - **HomePage** – Renders `NewsSection` with SSR initial articles
-- **SearchPage** – Search bar, results grid, empty/no-results states
-- **BookmarksPage** – Grid of bookmarked articles
-- **AboutPage** – Static content about the project
+- **SearchPage** – Centered search form (theme-aware SearchBar, Search in, From/To dates), "Browse headlines to bookmark" link, empty state with Lucide icons; results grid with pagination
+- **BookmarksPage** – Centered layout; grid of bookmarked articles (same ArticleCard badges as Home); empty state with Lucide icons and "Browse headlines to bookmark"
+- **AboutPage** – Client component; "Learn the basics" header + grid of feature cards with Lucide icons; Framer Motion staggered card animations; same max-w-7xl centered layout as Search/Bookmarks
 
 ### Layout Components
 
-- **NewsSection** – Main home layout: header, sidebar, scrollable content, footer
-- **PageHeader** – Navbar with logo, country/lang filters, refresh, theme toggle, nav links
-- **NewsNavbar** – Category sidebar (General, World, Business, etc.)
+- **NewsSection** – Home layout: header, NewsSidebar, scrollable main (HeroBanner, Headlines reel, NewsGrid), footer; scroll to top on category change
+- **Navbar** – Top bar: logo, country/lang filters, refresh, theme toggle, nav links, bookmark count badge; border-b with mx-4 for inset bottom line
+- **NewsSidebar** – Category list with Lucide icons per category
+- **HeroBanner** – Hero carousel (responsive height); mounted guard for hydration
+- **BannerSlider** – Infinite horizontal reel of article cards; mounted guard for hydration
 - **Footer** – Copyright and links
 
 ### UI Components
 
-- **ArticleCard** – Single article with image, title, source, bookmark button
-- **NewsGrid** – Grid of `ArticleCard`s (2 columns on home)
-- **NewsModal** – Full article view in a modal
-- **SearchBar** – Search input with debouncing
+- **ArticleCard** – Image, title, badges (source, date, lang, country), bookmark button; used on Home, Search, Bookmarks
+- **NewsGrid** – Grid of ArticleCards
+- **NewsModal** – Shadcn Dialog (90vw×90vh); theme-aware badges and text; single body (description or content); Share, Bookmark, Read More; same component on Home, Search, Bookmarks
+- **SearchBar** – Theme-aware input with Lucide Search icon; debounced
 - **ThemeToggle** – Light/dark theme switch
 
 ### Data Flow
 
-1. **Home:** `app/page.tsx` (server) fetches initial headlines → passes to `HomePage` → `NewsSection` uses `useNews` for category switching
-2. **Search:** `SearchPage` uses `useSearch(query)` → fetches `/api/search?q=...`
-3. **Bookmarks:** `BookmarkContext` reads/writes `localStorage`; `BookmarksPage` renders saved articles
+1. **Home:** `app/page.tsx` (server) fetches initial headlines → `HomePage` → `NewsSection` uses `useNews` for category switching; same `Article` passed to `NewsModal`
+2. **Search:** `SearchPage` uses `useSearch(query, params)` with NewsContext filters; "Search in", From/To; full `Article` to `NewsModal`
+3. **Bookmarks:** `BookmarkContext` stores full article data (including description, content); `BookmarksPage` converts to `Article` and uses same `NewsModal`
 
 ---
 
@@ -389,7 +405,8 @@ Returns `{ bookmarkedArticles, toggleBookmark, isBookmarked }` for bookmark stat
 
 ### BookmarkContext
 
-- **Purpose:** Persist bookmarked articles in `localStorage`
+- **Purpose:** Persist bookmarked articles in `localStorage` with full article data for modal parity
+- **Stored:** url, title, image, publishedAt, source (name, country), lang, description, content
 - **Values:** `bookmarkedArticles`, `toggleBookmark`, `isBookmarked`
 - **Storage key:** `news-world-bookmarks`
 
@@ -437,15 +454,15 @@ import ArticleCard from "@/components/ui/ArticleCard";
 />;
 ```
 
-### PageHeader
+### Navbar
 
-Drop-in navbar for any page:
+Drop-in top navbar for any page:
 
 ```tsx
-import PageHeader from "@/components/ui/PageHeader";
+import Navbar from "@/components/ui/Navbar";
 
 <header>
-  <PageHeader />
+  <Navbar />
 </header>;
 ```
 
@@ -467,7 +484,20 @@ Use in other projects by copying the hooks and ensuring `/api/headlines` and `/a
 
 ## Keywords
 
-Next.js 16, React 19, TypeScript, Tailwind CSS, GNews API, News App, SSR, API Routes, Image Proxy, React Query, TanStack Query, Context API, localStorage, Bookmarks, Responsive Design, Framer Motion, Components, Frontend, Web Development, Educational Project
+Next.js 16, React 19, TypeScript, Tailwind CSS, GNews API, News App, SSR, API Routes, Image Proxy, React Query, TanStack Query, Context API, localStorage, Bookmarks, Shadcn UI, Lucide Icons, Hero Banner, Light/Dark Theme, Responsive Design, Framer Motion, Hydration-Safe, Educational Project
+
+---
+
+## Implementation highlights (what’s included)
+
+- **Hero & reel:** HeroBanner (responsive `h-64 sm:h-96 md:h-140`) and BannerSlider infinite film reel; both use a mounted guard so SSR and client render the same placeholder, avoiding hydration mismatch.
+- **Theme:** Light/dark mode with theme-aware classes everywhere (no hardcoded dark colors); inline script in layout for instant theme apply; scrollbars and form inputs (SearchBar, date inputs with `color-scheme: dark` in dark mode) adapt.
+- **Navbar:** Single place for the bottom border; `mx-4` so the line is inset; same header wrapper on all pages (no border on page headers).
+- **Search page:** Centered search block; theme-aware SearchBar (Lucide Search icon); "Search in" and From/To date filters; pagination; "Browse headlines to bookmark" link; empty state with Lucide icons, x-y centered.
+- **Bookmarks page:** Centered layout; bookmark counter in navbar; same badges on cards as Home (source, date, lang, country); full article data (description, content) stored so the modal shows the same content; empty state with Lucide icons.
+- **Article modal:** Shadcn Dialog at 90vw×90vh; theme-aware text and badges; single body block (no duplicate description + content); GNews “[N chars]” suffix stripped; ring-0 for clean edges; same component and Article shape on Home, Search, Bookmarks.
+- **Image proxy:** First-party only; 4xx/5xx redirect to placeholder (no 401/400 in console); browser-like User-Agent; documented in `next.config.ts`.
+- **About page:** Client component with Framer Motion; staggered card animations; same centered layout (max-w-7xl) and hover styling as other pages.
 
 ---
 

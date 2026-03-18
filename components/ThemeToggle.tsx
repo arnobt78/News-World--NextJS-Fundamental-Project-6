@@ -48,7 +48,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={toggle}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-      className="text-white/80 hover:text-white hover:bg-white/10 size-9 sm:size-10 md:size-11 [&_svg]:size-4 sm:[&_svg]:size-5 md:[&_svg]:size-5"
+      className="size-9 sm:size-10 md:size-11 rounded-lg border border-border bg-muted/50 text-foreground hover:bg-muted [&_svg]:size-4 sm:[&_svg]:size-5 md:[&_svg]:size-5"
     >
       {theme === "dark" ? (
         <Sun />

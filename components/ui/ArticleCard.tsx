@@ -2,7 +2,8 @@
 
 /**
  * ArticleCard - Single article: image, title, source badge, bookmark button.
- * Staggered animation by index. isHeadline=true for larger layout.
+ * Staggered animation by index. isHeadline=true for larger layout (currently unused:
+ * featured headline slot removed in favor of HeroBanner + Headlines reel; grid shows all articles).
  * Bookmark button stops propagation so card click opens modal.
  */
 import { motion } from "framer-motion";
@@ -82,15 +83,46 @@ export default function ArticleCard({
         >
           {article.title}
         </h3>
-        {!isHeadline && article.source?.name && (
+        <div className="flex flex-wrap gap-1.5 mt-2 items-center">
+          {article.source?.name && (
+            <Badge
+              variant="secondary"
+              className="bg-black/50 text-white/90 border-0 text-xs"
+              suppressHydrationWarning
+            >
+              {article.source.name}
+            </Badge>
+          )}
           <Badge
-            variant="secondary"
-            className="mt-1 bg-black/50 text-white/90 border-0 text-xs sm:text-sm"
+            variant="outline"
+            className="border-white/30 text-white/80 text-xs font-normal"
             suppressHydrationWarning
           >
-            {article.source.name}
+            {new Date(article.publishedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "2-digit",
+              year: "numeric",
+            })}
           </Badge>
-        )}
+          {article.lang && (
+            <Badge
+              variant="outline"
+              className="border-white/30 text-white/70 text-xs font-normal"
+              suppressHydrationWarning
+            >
+              {article.lang}
+            </Badge>
+          )}
+          {article.source?.country && (
+            <Badge
+              variant="outline"
+              className="border-white/30 text-white/70 text-xs font-normal"
+              suppressHydrationWarning
+            >
+              {article.source.country}
+            </Badge>
+          )}
+        </div>
       </div>
     </motion.div>
   );

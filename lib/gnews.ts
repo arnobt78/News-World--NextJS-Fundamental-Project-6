@@ -48,6 +48,8 @@ export async function fetchHeadlines(
     max: params?.max ?? 10,
     page: params?.page ?? 1,
     q: params?.q,
+    nullable: params?.nullable,
+    truncate: params?.truncate,
   });
 
   const res = await fetch(url, {
@@ -74,6 +76,9 @@ export async function fetchSearch(
     from: params.from,
     to: params.to,
     sortby: params.sortby ?? "publishedAt",
+    in: params.in,
+    nullable: params.nullable,
+    truncate: params.truncate,
   });
 
   const res = await fetch(url, {

@@ -14,7 +14,10 @@ export const queryKeys = {
       q: string,
       page: number,
       country?: string,
-      lang?: string
-    ) => ["search", q, page, country, lang] as const,
+      lang?: string,
+      inParam?: string,
+      from?: string,
+      to?: string
+    ) => ["search", q, page, country, lang, inParam, from, to] as const,
   },
 };

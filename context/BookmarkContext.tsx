@@ -21,7 +21,10 @@ export interface BookmarkArticle {
   title: string;
   image: string | null;
   publishedAt: string;
-  source: { name: string };
+  source: { name: string; country?: string };
+  lang?: string;
+  description?: string;
+  content?: string;
 }
 
 interface BookmarkContextValue {
@@ -39,7 +42,13 @@ function toMinimal(article: Article): BookmarkArticle {
     title: article.title,
     image: article.image ?? null,
     publishedAt: article.publishedAt,
-    source: { name: article.source?.name ?? "Unknown" },
+    source: {
+      name: article.source?.name ?? "Unknown",
+      country: article.source?.country,
+    },
+    lang: article.lang,
+    description: article.description,
+    content: article.content,
   };
 }
 
@@ -119,7 +128,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     } else if (article) {
       next = [...current, toMinimal(article)];
     } else {
-      next = [...current, { url, title: "", image: null, publishedAt: "", source: { name: "" } }];
+      next = [...current, { url, title: "", image: null, publishedAt: "", source: { name: "" }, lang: undefined, description: undefined, content: undefined }];
     }
     saveToStorage(next);
     notify();

@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * SearchBar - Debounced search input. Calls onSearch after debounceMs of no typing.
- * Reduces API calls when user types quickly. Focus state for border/scale animation.
+ * SearchBar - Debounced search input. Theme-aware for light/dark mode.
+ * Uses Lucide Search icon. Focus state for border/scale animation.
  */
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { Search } from "lucide-react";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -27,21 +28,21 @@ export default function SearchBar({
 
   useEffect(() => {
     const timer = setTimeout(debouncedSearch, debounceMs);
-    return () => clearTimeout(timer); /* Cancel if query changes before debounce */
+    return () => clearTimeout(timer);
   }, [query, debounceMs, debouncedSearch]);
 
   return (
     <motion.div
       className={`flex items-center gap-2 rounded-xl border-2 transition-colors ${
         focused
-          ? "border-[#b88efc] bg-white/5"
-          : "border-[#333] bg-[#111214]"
+          ? "border-primary bg-muted/50"
+          : "border-border bg-muted/30"
       }`}
       animate={{ scale: focused ? 1.02 : 1 }}
       transition={{ duration: 0.2 }}
     >
-      <span className="pl-4 text-[#888]">
-        <i className="fa-solid fa-magnifying-glass" />
+      <span className="pl-4 text-muted-foreground shrink-0" aria-hidden>
+        <Search className="size-5" />
       </span>
       <input
         type="text"
@@ -50,7 +51,7 @@ export default function SearchBar({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className="flex-1 py-3 px-2 bg-transparent text-white placeholder-[#666] outline-none font-outfit text-sm sm:text-base md:text-lg"
+        className="flex-1 py-3 px-2 bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-outfit text-sm sm:text-base md:text-lg"
         aria-label="Search news"
       />
     </motion.div>
